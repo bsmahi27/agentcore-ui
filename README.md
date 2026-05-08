@@ -5,7 +5,7 @@ A visual web interface for the [AWS AgentCore CLI](https://docs.aws.amazon.com/a
 ## Prerequisites
 
 - [Node.js](https://nodejs.org/) v20+
-- [AgentCore CLI](https://docs.aws.amazon.com/agentcore) installed and available on your PATH (`agentcore --version`)
+- [AgentCore CLI](https://github.com/aws/agentcore-cli) installed and available on your PATH (`agentcore --version`)
 - An initialized AgentCore project directory (`agentcore create`)
 
 ## Getting Started
