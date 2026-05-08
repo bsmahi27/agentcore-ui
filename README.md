@@ -1,6 +1,6 @@
 # AgentCore UI
 
-A visual web interface for the [AWS AgentCore CLI](https://docs.aws.amazon.com/agentcore), built with Next.js 14, Tailwind CSS, and TypeScript.
+A visual web interface for the [AWS AgentCore CLI](https://github.com/aws/agentcore-cli), built with Next.js 14, Tailwind CSS, and TypeScript.
 
 ## Prerequisites
 
