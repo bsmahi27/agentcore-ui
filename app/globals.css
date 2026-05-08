@@ -1,0 +1,18 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Smooth scrollbar for output panels */
+pre {
+  scrollbar-width: thin;
+  scrollbar-color: #334155 transparent;
+}
+pre::-webkit-scrollbar { width: 6px; height: 6px; }
+pre::-webkit-scrollbar-track { background: transparent; }
+pre::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+
+/* Light mode scrollbar */
+:root:not(.dark) pre {
+  scrollbar-color: #cbd5e1 transparent;
+}
+:root:not(.dark) pre::-webkit-scrollbar-thumb { background: #cbd5e1; }
