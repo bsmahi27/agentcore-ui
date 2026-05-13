@@ -164,7 +164,7 @@ export function buildDeployArgs(d: Record<string, any>): Args {
   flag(args, '-v', d.verbose);
   flag(args, '--dry-run', d.dryRun);
   flag(args, '--diff', d.diff);
-  args.push('--json');
+  //args.push('--json');
   return args;
 }
 

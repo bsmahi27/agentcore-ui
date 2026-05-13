@@ -16,3 +16,7 @@ pre::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
   scrollbar-color: #cbd5e1 transparent;
 }
 :root:not(.dark) pre::-webkit-scrollbar-thumb { background: #cbd5e1; }
+
+.text-sm {
+  font-size: 1.1rem;
+}
