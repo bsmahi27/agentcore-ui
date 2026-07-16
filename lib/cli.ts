@@ -67,6 +67,7 @@ export function buildAddAgentArgs(d: Record<string, any>): Args {
     kv(args, '--framework', d.framework);
     kv(args, '--model-provider', d.modelProvider);
   }
+  kv(args, '--language', d.language);
   kv(args, '--memory', d.memory);
   kv(args, '--protocol', d.protocol);
   kv(args, '--build', d.build);
@@ -169,6 +170,31 @@ export function buildDeployArgs(d: Record<string, any>): Args {
 }
 
 // ---------------------------------------------------------------------------
+// aws bedrock-agentcore-control create-registry-record
+// ---------------------------------------------------------------------------
+export function buildRegistryArgs(d: Record<string, any>): Args {
+  const args: Args = ['bedrock-agentcore-control', 'create-registry-record'];
+  kv(args, '--registry-id', d.registryId);
+  kv(args, '--name', d.name);
+  kv(args, '--descriptor-type', d.descriptorType);
+  kv(args, '--record-version', d.recordVersion);
+  kv(args, '--description', d.description);
+  kv(args, '--source-type', d.sourceType);
+  kv(args, '--descriptors', d.descriptors);
+  kv(args, '--region', d.region);
+  kv(args, '--endpoint-url', d.endpointUrl);
+  kv(args, '--credential-type', d.credentialType);
+  kv(args, '--role-arn', d.roleArn);
+  kv(args, '--service-name', d.serviceName);
+  kv(args, '--credential-provider-arn', d.credentialProviderArn);
+  kv(args, '--scopes', d.scopes);
+  kv(args, '--custom-parameters', d.customParameters);
+  flag(args, '--create-as-draft', d.createAsDraft);
+  flag(args, '--submit-for-approval', d.submitForApproval);
+  return args;
+}
+
+// ---------------------------------------------------------------------------
 // agentcore invoke
 // ---------------------------------------------------------------------------
 export function buildInvokeArgs(d: Record<string, any>): Args {
@@ -238,7 +264,7 @@ export function buildRemoveArgs(d: Record<string, any>): Args {
 // ---------------------------------------------------------------------------
 // Utility: render args as a human-readable command string for preview
 // ---------------------------------------------------------------------------
-export function argsToCommand(args: Args): string {
+export function argsToCommand(args: Args, executable = 'agentcore'): string {
   const parts = args.map((a) => (a.includes(' ') ? `"${a}"` : a));
-  return `agentcore ${parts.join(' ')}`;
+  return `${executable} ${parts.join(' ')}`;
 }

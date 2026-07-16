@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, type ChangeEvent } from 'react';
 import { useForm } from 'react-hook-form';
 import Header from '@/components/Header';
 import CommandPreview from '@/components/CommandPreview';
@@ -11,7 +11,7 @@ import { buildLogsArgs, argsToCommand } from '@/lib/cli';
 const LOG_LEVELS = ['', 'error', 'warn', 'info', 'debug'];
 
 export default function LogsPage() {
-  const { cwd } = useWorkingDir();
+  const { cwd, setCwd } = useWorkingDir();
   const { register, watch } = useForm({
     defaultValues: {
       runtime: '',
@@ -25,10 +25,42 @@ export default function LogsPage() {
   });
 
   const [values, setValues] = useState(() => watch());
+  const [agentOptions, setAgentOptions] = useState<Array<{ name: string; path: string }>>([]);
+  const [selectedAgentPath, setSelectedAgentPath] = useState('');
+  const [hasUserSelectedAgent, setHasUserSelectedAgent] = useState(false);
   useEffect(() => {
     const { unsubscribe } = watch((data) => setValues({ ...data } as any));
     return unsubscribe;
   }, []);
+  useEffect(() => {
+    let ignore = false;
+
+    const loadAgents = async () => {
+      try {
+        const res = await fetch('/api/agents');
+        const data = await res.json();
+        if (!ignore) {
+          const options: Array<{ name: string; path: string }> = Array.isArray(data.agents)
+            ? data.agents
+            : [];
+          setAgentOptions(options);
+          if (options.length && !selectedAgentPath && !hasUserSelectedAgent) {
+            const matched = options.find((agent) => agent.path === cwd);
+            if (matched) {
+              setSelectedAgentPath(matched.path);
+            }
+          }
+        }
+      } catch {
+        if (!ignore) {
+          setAgentOptions([]);
+        }
+      }
+    };
+
+    loadAgents();
+    return () => { ignore = true; };
+  }, [cwd, hasUserSelectedAgent]);
   const args = buildLogsArgs(values);
   const [output, setOutput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -39,7 +71,12 @@ export default function LogsPage() {
     abortRef.current?.abort();
     setLoading(false);
   };
-
+  const handleAgentChange = (event: ChangeEvent<HTMLSelectElement>) => {
+        const nextPath = event.target.value;
+        setSelectedAgentPath(nextPath);
+        setHasUserSelectedAgent(true);
+        if (nextPath) setCwd(nextPath);
+      };
   const run = async () => {
     setLoading(true);
     setOutput('');
@@ -98,6 +135,16 @@ export default function LogsPage() {
       <div className="flex-1 overflow-auto p-6">
         <div className="max-w-3xl mx-auto space-y-5">
           <div className="grid grid-cols-2 gap-4">
+            <Field label="Applications *" hint="Choose the application">
+              <Select value={selectedAgentPath} onChange={handleAgentChange}>
+                <option value="">Select an agent</option>
+                {agentOptions.map((agent) => (
+                  <option key={agent.path} value={agent.path}>
+                    {agent.name}
+                  </option>
+                ))}
+              </Select>
+            </Field>
             <Field label="Runtime">
               <Input {...register('runtime')} placeholder="MyAgent (all if empty)" />
             </Field>

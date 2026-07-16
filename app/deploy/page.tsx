@@ -185,7 +185,7 @@
 
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, type ChangeEvent } from "react";
 import { useForm } from "react-hook-form";
 import Header from "@/components/Header";
 import CommandPreview from "@/components/CommandPreview";
@@ -193,6 +193,7 @@ import OutputPanel from "@/components/OutputPanel";
 import {
   Field,
   Input,
+  Select,
   RunButton,
   SecondaryButton,
 } from "@/components/FormParts";
@@ -203,9 +204,9 @@ import ProgressStepper from "@/components/ProgressStepper";
 import { parseSteps } from "@/lib/stepParser";
 
 export default function DeployPage() {
-  const { cwd } = useWorkingDir();
+  const { cwd, setCwd } = useWorkingDir();
 
-  const { register, watch, handleSubmit } = useForm({
+  const { register, watch, handleSubmit, setValue } = useForm({
     defaultValues: {
       agentdirectory: "",
       target: "",
@@ -217,6 +218,9 @@ export default function DeployPage() {
   });
 
   const [values, setValues] = useState(() => watch());
+  const [agentOptions, setAgentOptions] = useState<Array<{ name: string; path: string }>>([]);
+  const [selectedAgentPath, setSelectedAgentPath] = useState('');
+  const [hasUserSelectedAgent, setHasUserSelectedAgent] = useState(false);
 
   useEffect(() => {
     const { unsubscribe } = watch((data) =>
@@ -224,6 +228,36 @@ export default function DeployPage() {
     );
     return unsubscribe;
   }, [watch]);
+
+  useEffect(() => {
+    let ignore = false;
+
+    const loadAgents = async () => {
+      try {
+        const res = await fetch('/api/agents');
+        const data = await res.json();
+        if (!ignore) {
+          const options: Array<{ name: string; path: string }> = Array.isArray(data.agents)
+            ? data.agents
+            : [];
+          setAgentOptions(options);
+          if (options.length && !selectedAgentPath && !hasUserSelectedAgent) {
+            const matched = options.find((agent) => agent.path === cwd);
+            if (matched) {
+              setSelectedAgentPath(matched.path);
+            }
+          }
+        }
+      } catch {
+        if (!ignore) {
+          setAgentOptions([]);
+        }
+      }
+    };
+
+    loadAgents();
+    return () => { ignore = true; };
+  }, [cwd, hasUserSelectedAgent]);
 
   // ✅ Mode tracking
   const [mode, setMode] = useState<"deploy" | "dryRun" | "diff">("deploy");
@@ -243,6 +277,13 @@ export default function DeployPage() {
 
   const steps = parseSteps(stdout);
 
+  const handleAgentChange = (event: ChangeEvent<HTMLSelectElement>) => {
+    const nextPath = event.target.value;
+    setSelectedAgentPath(nextPath);
+    setValue('agentdirectory', nextPath);
+    if (nextPath) setCwd(nextPath);
+  };
+
   // ✅ Auto scroll logs
   const logRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -258,13 +299,15 @@ export default function DeployPage() {
     setStderr("");
 
     try {
+      const targetCwd = selectedAgentPath || cwd;
+      const targetAgentDirectory = selectedAgentPath || values.agentdirectory || cwd;
       const res = await fetch("/api/run", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           args: overrideArgs ?? args,
-          cwd,
-          agentdirectory: values.agentdirectory,
+          cwd: targetCwd,
+          agentdirectory: targetAgentDirectory,
         }),
       });
 
@@ -293,8 +336,8 @@ export default function DeployPage() {
   };
 
   const resolvedPath =
-    values.agentdirectory || cwd
-      ? `${values.agentdirectory || cwd}`
+    selectedAgentPath || values.agentdirectory || cwd
+      ? `${selectedAgentPath || values.agentdirectory || cwd}`
       : cwd;
 
   const previewCommand = `cd ${resolvedPath} && ${argsToCommand(args)}`;
@@ -308,6 +351,16 @@ export default function DeployPage() {
 
           {/* ✅ FORM */}
           <form onSubmit={handleSubmit(onDeploy)} className="space-y-5">
+            <Field label="Applications *" hint="Choose the application">
+              <Select value={selectedAgentPath} onChange={handleAgentChange}>
+                <option value="">Select an agent</option>
+                {agentOptions.map((agent) => (
+                  <option key={agent.path} value={agent.path}>
+                    {agent.name}
+                  </option>
+                ))}
+              </Select>
+            </Field>
 
             <Field
               label="Project Folder"

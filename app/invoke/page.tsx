@@ -1,15 +1,15 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, type ChangeEvent } from 'react';
 import { useForm } from 'react-hook-form';
 import Header from '@/components/Header';
 import CommandPreview from '@/components/CommandPreview';
-import { Field, Input, RunButton } from '@/components/FormParts';
+import { Field, Input, RunButton, Select } from '@/components/FormParts';
 import { useWorkingDir } from '@/components/WorkingDirProvider';
 import { buildInvokeArgs, argsToCommand } from '@/lib/cli';
 
 export default function InvokePage() {
-  const { cwd } = useWorkingDir();
+  const { cwd, setCwd } = useWorkingDir();
   const { register, watch } = useForm({
     defaultValues: {
       prompt: '',
@@ -23,10 +23,43 @@ export default function InvokePage() {
   });
 
   const [values, setValues] = useState(() => watch());
+  const [agentOptions, setAgentOptions] = useState<Array<{ name: string; path: string }>>([]);
+  const [selectedAgentPath, setSelectedAgentPath] = useState('');
+  const [hasUserSelectedAgent, setHasUserSelectedAgent] = useState(false);
   useEffect(() => {
     const { unsubscribe } = watch((data) => setValues({ ...data } as any));
     return unsubscribe;
   }, []);
+
+  useEffect(() => {
+    let ignore = false;
+
+    const loadAgents = async () => {
+      try {
+        const res = await fetch('/api/agents');
+        const data = await res.json();
+        if (!ignore) {
+          const options: Array<{ name: string; path: string }> = Array.isArray(data.agents)
+            ? data.agents
+            : [];
+          setAgentOptions(options);
+          if (options.length && !selectedAgentPath && !hasUserSelectedAgent) {
+            const matched = options.find((agent) => agent.path === cwd);
+            if (matched) {
+              setSelectedAgentPath(matched.path);
+            }
+          }
+        }
+      } catch {
+        if (!ignore) {
+          setAgentOptions([]);
+        }
+      }
+    };
+
+    loadAgents();
+    return () => { ignore = true; };
+  }, [cwd, hasUserSelectedAgent]);
   const args = buildInvokeArgs(values);
   const [output, setOutput] = useState('');
   const [exitCode, setExitCode] = useState<number | null>(null);
@@ -38,6 +71,14 @@ export default function InvokePage() {
     abortRef.current?.abort();
     setLoading(false);
   };
+
+
+  const handleAgentChange = (event: ChangeEvent<HTMLSelectElement>) => {
+      const nextPath = event.target.value;
+      setSelectedAgentPath(nextPath);
+      setHasUserSelectedAgent(true);
+      if (nextPath) setCwd(nextPath);
+    };
 
   const run = async () => {
     if (!values.prompt.trim()) return;
@@ -102,6 +143,17 @@ export default function InvokePage() {
       <Header title="Invoke Agent" />
       <div className="flex-1 overflow-auto p-6">
         <div className="max-w-3xl mx-auto space-y-5">
+          {/* <form onSubmit={handleSubmit(execute)} className="space-y-5"></form> */}
+          <Field label="Applications *" hint="Choose the application">
+            <Select value={selectedAgentPath} onChange={handleAgentChange}>
+              <option value="">Select an agent</option>
+              {agentOptions.map((agent) => (
+                <option key={agent.path} value={agent.path}>
+                  {agent.name}
+                </option>
+              ))}
+            </Select>
+          </Field>
           <Field label="Prompt *">
             <textarea
               {...register('prompt')}

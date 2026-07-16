@@ -1,16 +1,16 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type ChangeEvent } from 'react';
 import { useForm } from 'react-hook-form';
 import Header from '@/components/Header';
 import CommandPreview from '@/components/CommandPreview';
 import OutputPanel from '@/components/OutputPanel';
-import { Field, Input, RunButton } from '@/components/FormParts';
+import { Field, Input, RunButton, Select } from '@/components/FormParts';
 import { useWorkingDir } from '@/components/WorkingDirProvider';
 import { buildTracesListArgs, argsToCommand } from '@/lib/cli';
 
 export default function TracesPage() {
-  const { cwd } = useWorkingDir();
+  const { cwd, setCwd } = useWorkingDir();
   const { register, watch } = useForm({
     defaultValues: {
       runtime: '',
@@ -22,10 +22,42 @@ export default function TracesPage() {
 
   const [traceId, setTraceId] = useState('');
   const [values, setValues] = useState(() => watch());
+  const [agentOptions, setAgentOptions] = useState<Array<{ name: string; path: string }>>([]);
+  const [selectedAgentPath, setSelectedAgentPath] = useState('');
+  const [hasUserSelectedAgent, setHasUserSelectedAgent] = useState(false);
   useEffect(() => {
     const { unsubscribe } = watch((data) => setValues({ ...data } as any));
     return unsubscribe;
   }, []);
+  useEffect(() => {
+    let ignore = false;
+
+    const loadAgents = async () => {
+      try {
+        const res = await fetch('/api/agents');
+        const data = await res.json();
+        if (!ignore) {
+          const options: Array<{ name: string; path: string }> = Array.isArray(data.agents)
+            ? data.agents
+            : [];
+          setAgentOptions(options);
+          if (options.length && !selectedAgentPath && !hasUserSelectedAgent) {
+            const matched = options.find((agent) => agent.path === cwd);
+            if (matched) {
+              setSelectedAgentPath(matched.path);
+            }
+          }
+        }
+      } catch {
+        if (!ignore) {
+          setAgentOptions([]);
+        }
+      }
+    };
+
+    loadAgents();
+    return () => { ignore = true; };
+  }, [cwd, hasUserSelectedAgent]);
   const listArgs = buildTracesListArgs(values);
   const getArgs = traceId.trim()
     ? ['traces', 'get', traceId.trim(), ...(values.runtime ? ['--runtime', values.runtime] : [])]
@@ -35,6 +67,13 @@ export default function TracesPage() {
   const [stderr, setStderr] = useState('');
   const [exitCode, setExitCode] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
+  
+  const handleAgentChange = (event: ChangeEvent<HTMLSelectElement>) => {
+          const nextPath = event.target.value;
+        setSelectedAgentPath(nextPath);
+        setHasUserSelectedAgent(true);
+        if (nextPath) setCwd(nextPath);
+      };
 
   const execute = async (args: string[]) => {
     setLoading(true);
@@ -61,6 +100,16 @@ export default function TracesPage() {
               List Traces
             </h2>
             <div className="grid grid-cols-2 gap-4">
+              <Field label="Applications *" hint="Choose the application">
+                <Select value={selectedAgentPath} onChange={handleAgentChange}>
+                  <option value="">Select an agent</option>
+                  {agentOptions.map((agent) => (
+                    <option key={agent.path} value={agent.path}>
+                      {agent.name}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
               <Field label="Runtime">
                 <Input {...register('runtime')} placeholder="MyAgent (all if empty)" />
               </Field>

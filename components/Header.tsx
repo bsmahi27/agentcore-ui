@@ -30,7 +30,7 @@ export default function Header({ title }: { title: string }) {
 
       <div className="flex items-center gap-3 text-sm">
         <div className="flex items-center gap-2">
-          <FolderOpen size={14} className="text-slate-500" />
+          {/* <FolderOpen size={14} className="text-slate-500" />
           {editing ? (
             <>
               <input
@@ -58,7 +58,7 @@ export default function Header({ title }: { title: string }) {
             >
               {cwd || 'Set project directory…'}
             </button>
-          )}
+          )} */}
         </div>
 
         {mounted && (

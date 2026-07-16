@@ -30,8 +30,9 @@ const ADD_CHILDREN = [
 
 const TOP_NAV = [
   { href: '/', label: 'Dashboard', Icon: LayoutDashboard },
-  { href: '/create', label: 'Create Project', Icon: PlusCircle },
+  { href: '/create', label: 'Agent WorkBench', Icon: PlusCircle },
   { href: '/deploy', label: 'Deploy', Icon: Rocket },
+  { href: '/agent-registry', label: 'Agent Registry', Icon: Cpu },
   { href: '/invoke', label: 'Invoke', Icon: Zap },
   { href: '/logs', label: 'Logs', Icon: ScrollText },
   { href: '/traces', label: 'Traces', Icon: Activity },
@@ -78,7 +79,7 @@ export default function Sidebar() {
             className="w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-sm"
           >
             <Cpu size={15} />
-            <span className="flex-1 text-left">Add Resource</span>
+            <span className="flex-1 text-left">AgentCore Services</span>
             {addOpen ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
           </button>
           {addOpen && (

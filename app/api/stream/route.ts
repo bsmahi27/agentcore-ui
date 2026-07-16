@@ -36,12 +36,29 @@ export async function POST(req: NextRequest) {
 
   const stream = new ReadableStream({
     start(controller) {
-      const bin = process.platform === 'win32' ? 'agentcore.cmd' : 'agentcore';
-      const proc = spawn(bin, args, {
-        cwd: cwd || process.cwd(),
-        env: { ...process.env, NO_COLOR: '1', FORCE_COLOR: '0', TERM: 'dumb' },
-        shell: false,
-      });
+      let proc;
+      if (process.platform === 'win32') {
+        const cmdArgs = ["agentcore", ...args].map((arg) => {
+          if (arg.length === 0) return "''";
+          if (/^[A-Za-z0-9_\/\.-]+$/.test(arg)) return arg;
+          return `'${arg.replace(/'/g, "''")}'`;
+        }).join(' ');
+        proc = spawn('powershell.exe', [
+          '-NoProfile',
+          '-Command',
+          `npx ${cmdArgs}`,
+        ], {
+          cwd: cwd || process.cwd(),
+          env: { ...process.env, NO_COLOR: '1', FORCE_COLOR: '0', TERM: 'dumb' },
+          shell: false,
+        });
+      } else {
+        proc = spawn('npx', ['agentcore', ...args], {
+          cwd: cwd || process.cwd(),
+          env: { ...process.env, NO_COLOR: '1', FORCE_COLOR: '0', TERM: 'dumb' },
+          shell: false,
+        });
+      }
 
       const send = (type: string, text: string) => {
         try {
