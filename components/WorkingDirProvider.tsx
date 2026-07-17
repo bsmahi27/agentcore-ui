@@ -25,7 +25,8 @@ export default function WorkingDirProvider({ children }: { children: ReactNode }
   useEffect(() => {
     const saved =
       localStorage.getItem('agentcore-cwd') ||
-      (process.env.NEXT_PUBLIC_DEFAULT_CWD ?? '');
+      process.env.NEXT_PUBLIC_DEFAULT_CWD ||
+      'C:\\Users\\lshamaka\\Desktop\\agentcore-ui-main\\generated_agents';
     setCwdState(saved);
   }, []);
 

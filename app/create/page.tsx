@@ -18,6 +18,7 @@ import { buildCreateArgs, argsToCommand } from '@/lib/cli';
 
 const FRAMEWORKS = ['Strands', 'LangChain_LangGraph', 'GoogleADK', 'OpenAIAgents'];
 const PROVIDERS = ['Bedrock', 'Anthropic', 'OpenAI', 'Gemini'];
+const LANGUAGES = ['Python', 'TypeScript'];
 const MEMORY = ['none', 'shortTerm', 'longAndShortTerm'];
 const BUILDS = ['CodeZip', 'Container'];
 const PROTOCOLS = ['HTTP', 'MCP', 'A2A'];
@@ -36,6 +37,7 @@ export default function CreatePage() {
       type: 'create',
       framework: 'Strands',
       modelProvider: 'Bedrock',
+      language: 'Python',
       memory: 'none',
       build: 'CodeZip',
       protocol: 'HTTP',
@@ -45,7 +47,6 @@ export default function CreatePage() {
       agentId: '',
       agentAliasId: '',
       region: '',
-      outputDir: '',
       apiKey: '',
       idleTimeout: '',
       maxLifetime: '',
@@ -54,6 +55,7 @@ export default function CreatePage() {
       skipInstall: false,
       noAgent: false,
       dryRun: false,
+      outputDir: 'C:\\Users\\lshamaka\\Desktop\\agentcore-ui-main\\generated_agents',
     },
   });
 
@@ -80,7 +82,8 @@ export default function CreatePage() {
       const res = await fetch('/api/run', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ args: overrideArgs ?? args, cwd }),
+        // Force create to use the generated_agents output directory so users don't need to enter it
+        body: JSON.stringify({ args: overrideArgs ?? args, cwd: 'C:\\Users\\lshamaka\\Desktop\\agentcore-ui-main\\generated_agents' }),
       });
       const data = await res.json();
       setStdout(data.stdout);
@@ -98,13 +101,13 @@ export default function CreatePage() {
 
   return (
     <div className="flex flex-col h-screen">
-      <Header title="Create Project" />
+      <Header title="Agent WorkBench" />
       <div className="flex-1 overflow-auto p-6">
         <div className="max-w-3xl mx-auto space-y-6">
           <form onSubmit={handleSubmit(() => execute())} className="space-y-5">
             {/* Name */}
             <Field
-              label="Project Name *"
+              label="Agent Name *"
               hint="Starts with a letter, alphanumeric only, max 23 chars"
               error={
                 errors.name?.type === 'required' ? 'Name is required' :
@@ -157,8 +160,8 @@ export default function CreatePage() {
               </SectionCard>
             )}
 
-            {/* Framework + Provider */}
-            <div className="grid grid-cols-2 gap-6">
+            {/* Framework + Provider + Language */}
+            <div className="grid grid-cols-3 gap-4">
               <Field label="Framework">
                 <Select {...register('framework')}>
                   {FRAMEWORKS.map((f) => (
@@ -170,6 +173,13 @@ export default function CreatePage() {
                 <Select {...register('modelProvider')}>
                   {PROVIDERS.map((p) => (
                     <option key={p}>{p}</option>
+                  ))}
+                </Select>
+              </Field>
+              <Field label="Language">
+                <Select {...register('language')}>
+                  {LANGUAGES.map((l) => (
+                    <option key={l}>{l}</option>
                   ))}
                 </Select>
               </Field>
@@ -242,8 +252,8 @@ export default function CreatePage() {
             {/* Optional */}
             <div className="grid grid-cols-3 gap-4">
               <Field label="Output Directory">
-                <Input {...register('outputDir')} placeholder="./projects" />
-              </Field>
+                  <Input {...register('outputDir')} placeholder="./projects" readOnly />
+                </Field>
               <Field label="Idle Timeout (s)">
                 <Input type="number" {...register('idleTimeout')} min={0} />
               </Field>
